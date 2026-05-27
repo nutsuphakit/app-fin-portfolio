@@ -24,12 +24,14 @@ Welcome to the **Financial Portfolio** project. This document serves as the prim
 - A Google account (for the Google Sheets/GAS backend).
 
 ### Setup & Installation
-1.  **Backend:**
+1.  **Repository:**
+    - Clone the repository: `git clone https://github.com/nutsuphakit/app-fin-portfolio.git`
+2.  **Backend:**
     - Create a Google Sheet with `Current_Portfolio` and `Transaction_Logs` tabs.
     - Deploy the code in `Code.gs` as a Web App (Access: Anyone).
-2.  **Frontend:**
-    - Paste your Web App URL into `app.js` (line 3).
-    - Open `index.html` locally.
+3.  **Frontend:**
+    - Paste your Web App URL into `docs/app.js` (line 3).
+    - Open `docs/index.html` locally.
 
 ### Testing
 - Open `tests.html` in your browser to run the comprehensive unit test suite for the `PortfolioLogic` module.

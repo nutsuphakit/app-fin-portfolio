@@ -12,7 +12,7 @@
  * 6. Click "Deploy" > "New Deployment".
  * 7. Select "Web App".
  * 8. Execute as: "Me", Who has access: "Anyone".
- * 9. Copy the Web App URL and paste it into your local app.js.
+ * 9. Copy the Web App URL and paste it into your local docs/app.js.
  */
 
 const SPREADSHEET_ID = SpreadsheetApp.getActiveSpreadsheet().getId();

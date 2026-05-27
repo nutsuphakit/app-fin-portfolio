@@ -268,6 +268,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
+            document.querySelector('.donut-container').addEventListener('mouseleave', () => {
+                subDonutCard.classList.add('hidden');
+            });
+
             subAllocationChart = new Chart(document.getElementById('subAllocationChart'), {
                 type: 'doughnut',
                 data: { labels: [], datasets: [{ data: [] }] },
@@ -292,13 +296,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 type: 'bar',
                 data: getChangeData(),
                 options: {
-                    ...commonOptions,
-                    layout: { padding: { top: 30 } },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 30, bottom: 10 } },
                     plugins: {
-                        ...commonOptions.plugins,
-                        datalabels: { ...commonOptions.plugins.datalabels, anchor: 'end', align: 'top', formatter: (v) => PortfolioLogic.formatValue(v) }
+                        legend: { display: false },
+                        datalabels: {
+                            display: () => !state.isIncognito,
+                            color: () => getComputedStyle(body).getPropertyValue('--text-main') || '#fff',
+                            font: { size: 10, weight: 'bold' },
+                            anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'end' : 'start',
+                            align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
+                            formatter: (v) => PortfolioLogic.formatValue(v)
+                        }
                     },
-                    scales: { x: { grid: { display: false }, ticks: { color: '#64748b' } }, y: { display: false } }
+                    scales: {
+                        x: { 
+                            grid: { display: false }, 
+                            ticks: { color: '#64748b', font: { size: 10 } } 
+                        },
+                        y: { 
+                            display: true,
+                            beginAtZero: false,
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                            ticks: { display: false }
+                        }
+                    }
                 }
             });
         } catch (e) { console.error('Chart initialization failed:', e); }
@@ -350,22 +373,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getChangeData() {
         const periods = { 'W': 7, 'M': 30, 'Q': 90, 'Y': 365 };
-        const days = periods[state.barPeriod];
-        const cutoff = new Date();
+        const days = periods[state.barPeriod] || 7;
+        
+        let referenceDate = new Date();
+        if (state.logs && state.logs.length > 0) {
+            const timestamps = state.logs.map(l => new Date(l.date).getTime()).filter(t => !isNaN(t));
+            if (timestamps.length > 0) {
+                const latestLogTime = Math.max(...timestamps);
+                if (latestLogTime > referenceDate.getTime()) {
+                    referenceDate = new Date(latestLogTime);
+                }
+            }
+        }
+
+        const cutoff = new Date(referenceDate);
         cutoff.setDate(cutoff.getDate() - days);
 
-        const filtered = state.logs.filter(l => new Date(l.date) >= cutoff);
+        const filtered = state.logs.filter(l => {
+            const d = new Date(l.date);
+            return !isNaN(d.getTime()) && d >= cutoff;
+        });
+
         const grouped = {};
         filtered.forEach(l => {
-            grouped[l.name] = (grouped[l.name] || 0) + l.Value_in_THB;
+            grouped[l.name] = (grouped[l.name] || 0) + (parseFloat(l.Value_in_THB) || 0);
         });
 
         const labels = Object.keys(grouped).slice(-5);
+        const data = labels.map(l => grouped[l]);
+
         return {
             labels: labels,
             datasets: [{
-                data: labels.map(l => grouped[l]),
-                backgroundColor: (ctx) => ctx.raw >= 0 ? '#4caf50' : '#ef5350',
+                data: data,
+                backgroundColor: data.map(v => v >= 0 ? '#4caf50' : '#ef5350'),
                 borderRadius: 6
             }]
         };
@@ -388,15 +429,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update Charts
         if (allocationChart) {
-            allocationChart.data = PortfolioLogic.getAllocationData(state.portfolioData, state.exchangeRates, state.allocationView);
+            const newData = PortfolioLogic.getAllocationData(state.portfolioData, state.exchangeRates, state.allocationView);
+            allocationChart.data.labels = newData.labels;
+            allocationChart.data.datasets[0].data = newData.datasets[0].data;
+            allocationChart.data.datasets[0].backgroundColor = newData.datasets[0].backgroundColor;
             allocationChart.update();
         }
         if (trendChart) {
-            trendChart.data = getTrendData();
+            const newData = getTrendData();
+            trendChart.data.labels = newData.labels;
+            trendChart.data.datasets[0].data = newData.datasets[0].data;
             trendChart.update();
         }
         if (changeChart) {
-            changeChart.data = getChangeData();
+            const newData = getChangeData();
+            changeChart.data.labels = newData.labels;
+            changeChart.data.datasets[0].data = newData.datasets[0].data;
+            changeChart.data.datasets[0].backgroundColor = newData.datasets[0].backgroundColor;
             changeChart.update();
         }
         

@@ -144,6 +144,10 @@ body {
 }
 
 /* Page Toggling */
+.hidden {
+    display: none !important;
+}
+
 .view.hidden {
     display: none !important;
 }
