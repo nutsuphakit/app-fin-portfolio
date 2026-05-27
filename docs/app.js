@@ -379,35 +379,79 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.logs && state.logs.length > 0) {
             const timestamps = state.logs.map(l => new Date(l.date).getTime()).filter(t => !isNaN(t));
             if (timestamps.length > 0) {
-                const latestLogTime = Math.max(...timestamps);
-                if (latestLogTime > referenceDate.getTime()) {
-                    referenceDate = new Date(latestLogTime);
-                }
+                referenceDate = new Date(Math.max(...timestamps));
             }
         }
 
         const cutoff = new Date(referenceDate);
         cutoff.setDate(cutoff.getDate() - days);
 
-        const filtered = state.logs.filter(l => {
-            const d = new Date(l.date);
-            return !isNaN(d.getTime()) && d >= cutoff;
+        // Calculate Delta (Change) for each unique asset
+        const allNames = [...new Set(state.logs.map(l => l.name))];
+        const changes = [];
+
+        allNames.forEach(name => {
+            const assetLogs = state.logs.filter(l => l.name === name);
+            
+            // 1. Current Value (latest up to referenceDate)
+            const latestLogs = assetLogs
+                .filter(l => new Date(l.date) <= referenceDate)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if (latestLogs.length === 0) return;
+            const valEnd = latestLogs[0].Value_in_THB;
+
+            // 2. Baseline Value (latest BEFORE cutoff)
+            const prevLogs = assetLogs
+                .filter(l => new Date(l.date) < cutoff)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const valStart = prevLogs.length > 0 ? prevLogs[0].Value_in_THB : 0;
+            const delta = valEnd - valStart;
+
+            if (delta !== 0 || valStart === 0) {
+                changes.push({ name, delta, absDelta: Math.abs(delta) });
+            }
         });
 
-        const grouped = {};
-        filtered.forEach(l => {
-            grouped[l.name] = (grouped[l.name] || 0) + (parseFloat(l.Value_in_THB) || 0);
-        });
+        // Sort by magnitude of change and take Top 10
+        changes.sort((a, b) => b.absDelta - a.absDelta);
+        const topChanges = changes.slice(0, 10);
 
-        const labels = Object.keys(grouped).slice(-5);
-        const data = labels.map(l => grouped[l]);
+        // Fallback: If no changes found, show last 5 logs as absolute values
+        if (topChanges.length === 0 && state.logs.length > 0) {
+            const fallback = [...state.logs]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5);
+            return {
+                labels: fallback.map(l => l.name),
+                datasets: [{
+                    data: fallback.map(l => l.Value_in_THB),
+                    backgroundColor: '#6366f1',
+                    borderRadius: 6,
+                    datalabels: { display: () => !state.isIncognito }
+                }]
+            };
+        }
+
+        const labels = topChanges.map(c => c.name);
+        const data = topChanges.map(c => c.delta);
 
         return {
             labels: labels,
             datasets: [{
+                label: 'Value Change',
                 data: data,
-                backgroundColor: data.map(v => v >= 0 ? '#4caf50' : '#ef5350'),
-                borderRadius: 6
+                backgroundColor: data.map(v => v >= 0 ? 'rgba(74, 222, 128, 0.8)' : 'rgba(248, 113, 113, 0.8)'),
+                borderColor: data.map(v => v >= 0 ? '#4ade80' : '#f87171'),
+                borderWidth: 1,
+                borderRadius: 4,
+                datalabels: {
+                    display: () => !state.isIncognito,
+                    formatter: (v) => (v >= 0 ? '+' : '') + PortfolioLogic.formatValue(v),
+                    anchor: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'end' : 'start',
+                    align: (ctx) => ctx.dataset.data[ctx.dataIndex] >= 0 ? 'top' : 'bottom',
+                }
             }]
         };
     }
