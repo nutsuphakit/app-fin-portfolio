@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Financial Ledger | Premium Portfolio</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for clean iconography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- FIXED SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo-section">
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                <span class="logo-text">FinLedger</span>
+            </div>
+            
+            <!-- Spacer to push navigation to the bottom -->
+            <div style="flex-grow: 1;"></div>
+
+            <nav class="nav-list">
+                <li class="nav-item active" data-view="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Overview</span>
+                </li>
+                <li class="nav-item" data-view="manual-entry">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Quick Update</span>
+                </li>
+                <li class="nav-item" data-view="history">
+                    <i class="fas fa-history"></i>
+                    <span>Portfolio History</span>
+                </li>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="ai-prompt-btn" class="btn-ai-magic">
+                    <i class="fas fa-sparkles"></i>
+                    <span>AI Portfolio Review</span>
+                </button>
+                
+                <div class="utility-toggle">
+                    <div class="toggle-info">
+                        <i class="fas fa-shield-halved"></i>
+                        <span>Incognito</span>
+                    </div>
+                    <label class="switch-container">
+                        <input type="checkbox" id="incognito-toggle" hidden>
+                        <div class="switch"></div>
+                    </label>
+                </div>
+
+                <div class="utility-toggle">
+                    <div class="toggle-info">
+                        <i class="fas fa-moon"></i>
+                        <span>Dark Mode</span>
+                    </div>
+                    <label class="switch-container">
+                        <input type="checkbox" id="theme-toggle" checked hidden>
+                        <div class="switch"></div>
+                    </label>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <!-- TOP METRIC OVERVIEW -->
+            <header class="metric-overview">
+                <p class="metric-label">Total Portfolio Value</p>
+                <div class="total-value-display">
+                    <span class="symbol-lg">฿</span>
+                    <h1 class="value-lg privacy-sensitive" id="total-value">---</h1>
+                </div>
+            </header>
+
+            <!-- DASHBOARD GRID -->
+            <div id="dashboard-view" class="view">
+                <div class="dashboard-grid">
+                    <!-- Donut Allocation Card -->
+                    <div class="card donut-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Asset Allocation</h3>
+                            <button id="toggle-allocation-view" class="btn-neutral" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;">
+                                View by Platform
+                            </button>
+                        </div>
+                        <div class="donut-container">
+                            <!-- HTML Overlay for Donut Hole -->
+                            <div class="donut-overlay">
+                                <p class="overlay-label">Net Assets</p>
+                                <p class="overlay-value privacy-sensitive" id="donut-center-value">฿---</p>
+                            </div>
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Line Trend Card -->
+                    <div class="card line-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Performance Trend</h3>
+                        </div>
+                        <div class="chart-wrapper" style="flex: 1; position: relative;">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Bar Change Card (Full Width) -->
+                    <div class="card bar-card" style="grid-column: span 2; position: relative;">
+                        <div class="card-header">
+                            <h3 class="card-title">Net Worth Changes</h3>
+                            <div class="period-selector">
+                                <button class="btn-neutral btn-sm active" data-period="W">W</button>
+                                <button class="btn-neutral btn-sm" data-period="M">M</button>
+                                <button class="btn-neutral btn-sm" data-period="Q">Q</button>
+                                <button class="btn-neutral btn-sm" data-period="Y">Y</button>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" style="height: 250px; position: relative;">
+                            <canvas id="changeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Sub-Donut Detail Card -->
+            <div id="sub-donut-card" class="card hidden" style="position: fixed; width: 300px; height: 350px; z-index: 2000; pointer-events: none; border: 1px solid var(--brand-indigo); box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);">
+                <div class="card-header">
+                    <h3 class="card-title" id="sub-donut-title">Category Detail</h3>
+                </div>
+                <div class="donut-container" style="min-height: 200px;">
+                    <canvas id="subAllocationChart"></canvas>
+                </div>
+            </div>
+
+            <!-- QUICK UPDATE FORM VIEW -->
+            <div id="manual-entry-view" class="view hidden">
+                <div class="form-view-container">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Update Asset Value</h3>
+                        </div>
+                        <form id="entry-form" class="fin-form">
+                            <!-- New Sequence: Category -> Name -> Platform -->
+                            <div class="input-group">
+                                <label>Asset Category</label>
+                                <select id="category" class="fin-input" required>
+                                    <option value="" disabled selected>Select Category</option>
+                                    <optgroup label="Equities & Funds">
+                                        <option value="Thai Stocks">Thai Stocks (SET/mai)</option>
+                                        <option value="US Stocks">US Stocks (S&P 500/Nasdaq)</option>
+                                        <option value="Global ETFs">Global ETFs</option>
+                                        <option value="Mutual Funds">Mutual Funds (Equity/Bond)</option>
+                                        <option value="DR/DRx">DR / DRx (Fractional Global)</option>
+                                    </optgroup>
+                                    <optgroup label="Safe Havens & Cash">
+                                        <option value="Cash / Savings">Cash / Savings</option>
+                                        <option value="Fixed Income">Fixed Income / Bonds</option>
+                                        <option value="Gold">Gold (Physical/Online)</option>
+                                        <option value="Government Lottery">Government Lottery (Salak)</option>
+                                    </optgroup>
+                                    <optgroup label="Alternative">
+                                        <option value="Crypto Assets">Crypto Assets</option>
+                                        <option value="Stablecoins">Stablecoins (USDT/USDC)</option>
+                                        <option value="Real Estate">Real Estate / REITs</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Asset Name / Ticker</label>
+                                <div id="asset-name-container">
+                                    <input type="text" id="asset-name" class="fin-input" placeholder="e.g. BTC, AAPL, SCB" required list="asset-name-list">
+                                    <datalist id="asset-name-list">
+                                        <!-- Dynamic options will be injected here -->
+                                    </datalist>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Platform / Broker</label>
+                                <select id="platform" class="fin-input" required>
+                                    <option value="" disabled selected>Select Platform</option>
+                                    <optgroup label="Thai Banks & Brokers">
+                                        <option value="SCB">SCB (Easy/Streaming)</option>
+                                        <option value="KBank">KBank (K PLUS/K-My Funds)</option>
+                                        <option value="BBL">BBL (Bualuang mBanking)</option>
+                                        <option value="GSB">GSB (MyMo/Lottery)</option>
+                                        <option value="Krungsri">Krungsri (KMA/Kept)</option>
+                                        <option value="KTB">Krungthai (NEXT/Pao Tang)</option>
+                                    </optgroup>
+                                    <optgroup label="Global & Digital Investing">
+                                        <option value="Dime!">Dime! (by KKP)</option>
+                                        <option value="Webull">Webull Thailand</option>
+                                        <option value="InnovestX">InnovestX</option>
+                                        <option value="Pi Financial">Pi Financial</option>
+                                        <option value="Jitta Wealth">Jitta Wealth</option>
+                                        <option value="StashAway">StashAway</option>
+                                        <option value="Interactive Brokers">Interactive Brokers (IBKR)</option>
+                                    </optgroup>
+                                    <optgroup label="Crypto & Gold">
+                                        <option value="Bitkub">Bitkub</option>
+                                        <option value="Binance">Binance (TH/Global)</option>
+                                        <option value="Hua Seng Heng">Hua Seng Heng (Gold Now)</option>
+                                        <option value="YLG">YLG (Gold)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="input-group">
+                                    <label>Currency</label>
+                                    <select id="currency" class="fin-input">
+                                        <option value="THB">Thai Baht (฿)</option>
+                                        <option value="USD">US Dollar ($)</option>
+                                        <option value="EUR">Euro (€)</option>
+                                        <option value="JPY">Japanese Yen (¥)</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label>New Current Value</label>
+                                    <input type="number" id="value" class="fin-input" step="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>Transaction Date</label>
+                                <input type="datetime-local" id="transaction-date" class="fin-input" required>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-neutral" onclick="document.querySelector('[data-view=dashboard]').click()">Cancel</button>
+                                <button type="submit" class="btn-action">Update Ledger</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PORTFOLIO HISTORY VIEW -->
+            <div id="history-view" class="view hidden">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Portfolio History</h3>
+                        <button id="export-xml-btn" class="btn-neutral">
+                            <i class="fas fa-download"></i> Export XML
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="margin-top: 1rem;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                    <th style="padding: 1rem; text-align: left; color: var(--text-dim); font-size: 0.75rem;">DATE</th>
+                                    <th style="padding: 1rem; text-align: left; color: var(--text-dim); font-size: 0.75rem;">NAME</th>
+                                    <th style="padding: 1rem; text-align: left; color: var(--text-dim); font-size: 0.75rem;">PLATFORM</th>
+                                    <th style="padding: 1rem; text-align: left; color: var(--text-dim); font-size: 0.75rem;">CATEGORY</th>
+                                    <th style="padding: 1rem; text-align: right; color: var(--text-dim); font-size: 0.75rem;">VALUE</th>
+                                    <th style="padding: 1rem; text-align: center; color: var(--text-dim); font-size: 0.75rem;">CURR.</th>
+                                    <th style="padding: 1rem; text-align: right; color: var(--text-dim); font-size: 0.75rem;">VALUE (THB)</th>
+                                    <th style="padding: 1rem; text-align: right; color: var(--text-dim); font-size: 0.75rem;">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-body">
+                                <!-- Data rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="portfolio-logic.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

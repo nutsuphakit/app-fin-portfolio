@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portfolio Logic Tests</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        #log { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: pre-wrap; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Portfolio Logic Unit Tests</h1>
+    <div id="log">Running tests...</div>
+
+    <script src="portfolio-logic.js"></script>
+    <script src="tests.js"></script>
+    <script>
+        const logDiv = document.getElementById('log');
+        const originalLog = console.log;
+        const originalError = console.error;
+
+        console.log = function(...args) {
+            logDiv.innerHTML += `<div>${args.join(' ')}</div>`;
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            logDiv.innerHTML += `<div class="error">${args.join(' ')}</div>`;
+            originalError.apply(console, args);
+        };
+
+        window.onload = function() {
+            logDiv.innerHTML = '';
+            runTests();
+        };
+    </script>
+</body>
+</html>
